@@ -1,0 +1,17 @@
+{
+    "files.associations": {
+        "vmlinux.h": "c",
+        "utils.cpp": "c",
+        "bpf_tracing.h": "c",
+        "tcp_analyse.h": "c",
+        "bpf_helpers.h": "c",
+        "cstdio": "c",
+        "bpf.h": "c",
+        "cstdlib": "c",
+        "*.tcc": "c",
+        "memory": "c",
+        "new": "c",
+        "string.h": "c",
+        "bpf_core_read.h": "c"
+    }
+}
