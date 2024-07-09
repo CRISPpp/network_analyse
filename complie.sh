@@ -1,7 +1,14 @@
 #!/bin/bash
 
-rm ./server
-rm ./client
+rm -rf ./bin/*
+rm -rf ./ebpf_for_service/.output
+rm -rf ./ebpf_for_client/.output
 
-g++ ./server.cpp -o server
-g++ ./client.cpp -o client
+g++ ./service/server.cpp -o ./bin/server
+g++ ./service/client.cpp -o ./bin/client
+
+make -C ./ebpf_for_service -j
+make -C ./ebpf_for_client -j
+
+rm -rf ./ebpf_for_service/.output
+rm -rf ./ebpf_for_client/.output

@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause) */
-#ifndef __TCP_ANALYSE_H
-#define __TCP_ANALYSE_H
+#ifndef __TCP_ANALYSE_SERVICE_H
+#define __TCP_ANALYSE_SERVICE_H
 // #include <inttypes.h>
 typedef unsigned char __u8;
 typedef unsigned short __u16;
@@ -33,4 +33,4 @@ struct event {
     __u16 dport;
 };
 
-#endif /* __TCP_ANALYSE_H_ */
+#endif /* __TCP_ANALYSE_SERVICE_H_ */

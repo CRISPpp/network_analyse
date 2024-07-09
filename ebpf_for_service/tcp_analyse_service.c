@@ -1,4 +1,4 @@
-#include "tcp_analyse.h"
+#include "tcp_analyse_service.h"
 #include <argp.h>
 #include <arpa/inet.h>
 #include <bpf/bpf.h>
@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
-#include "tcp_analyse.skel.h"
+#include "tcp_analyse_service.skel.h"
 
 #define PERF_BUFFER_PAGES 16
 #define PERF_POLL_TIMEOUT_MS 100
@@ -23,20 +23,20 @@ static struct env {
     bool verbose;
 } env;
 
-const char* argp_program_version = "tcp_analyse 0.1";
+const char* argp_program_version = "tcp_analyse_service 0.1";
 const char* argp_program_bug_address =
     "https://github.com/iovisor/bcc/tree/master/libbpf-tools";
 const char argp_program_doc[] =
     "\nTrace TCP connects and show timestqmp.\n"
     "\n"
-    "USAGE: tcp_analyse [--help] [-t] [-p PID] [-L]\n"
+    "USAGE: tcp_analyse_service [--help] [-t] [-p PID] [-L]\n"
     "\n"
     "EXAMPLES:\n"
-    "    tcp_analyse              # summarize on-CPU time as a histogram\n"
-    "    tcp_analyse 1            # trace timestamp lower than 1 ms\n"
-    "    tcp_analyse 0.1          # trace timestamp lower than 100 us\n"
-    "    tcp_analyse -p 185       # trace PID 185 only\n"
-    "    tcp_analyse -L           # include LPORT while printing outputs\n";
+    "    tcp_analyse_service              # summarize on-CPU time as a histogram\n"
+    "    tcp_analyse_service 1            # trace timestamp lower than 1 ms\n"
+    "    tcp_analyse_service 0.1          # trace timestamp lower than 100 us\n"
+    "    tcp_analyse_service -p 185       # trace PID 185 only\n"
+    "    tcp_analyse_service -L           # include LPORT while printing outputs\n";
 
 static const struct argp_option opts[] = {
     {"pid", 'p', "PID", 0, "Trace this PID only"},
@@ -192,7 +192,7 @@ int main(int argc, char** argv) {
         .doc = argp_program_doc,
     };
     struct perf_buffer* pb = NULL;
-    struct tcp_analyse_bpf* obj;
+    struct tcp_analyse_service_bpf* obj;
     int err;
 
     err = argp_parse(&argp, argc, argv, 0, NULL, NULL);
@@ -202,7 +202,7 @@ int main(int argc, char** argv) {
     libbpf_set_strict_mode(LIBBPF_STRICT_ALL);
     libbpf_set_print(libbpf_print_fn);
 
-    obj = tcp_analyse_bpf__open();
+    obj = tcp_analyse_service_bpf__open();
     if (!obj) {
         fprintf(stderr, "failed to open BPF object\n");
         return 1;
@@ -229,13 +229,13 @@ int main(int argc, char** argv) {
                                   false);
     }
 
-    err = tcp_analyse_bpf__load(obj);
+    err = tcp_analyse_service_bpf__load(obj);
     if (err) {
         fprintf(stderr, "failed to load BPF object: %d\n", err);
         goto cleanup;
     }
 
-    err = tcp_analyse_bpf__attach(obj);
+    err = tcp_analyse_service_bpf__attach(obj);
     if (err) {
         goto cleanup;
     }
@@ -277,7 +277,7 @@ int main(int argc, char** argv) {
 
 cleanup:
     perf_buffer__free(pb);
-    tcp_analyse_bpf__destroy(obj);
+    tcp_analyse_service_bpf__destroy(obj);
 
     return err != 0;
 }
