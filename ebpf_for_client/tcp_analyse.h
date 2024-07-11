@@ -31,6 +31,7 @@ struct event {
     int af;
     __u16 lport;
     __u16 dport;
+    __u64 tcp_connect_time;
 };
 
 #endif /* __TCP_ANALYSE_H_ */

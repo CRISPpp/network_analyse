@@ -1,4 +1,3 @@
-#include "tcp_analyse.h"
 #include <argp.h>
 #include <arpa/inet.h>
 #include <bpf/bpf.h>
@@ -8,6 +7,9 @@
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
+
+#include "../shm.c"
+#include "tcp_analyse.h"
 #include "tcp_analyse.skel.h"
 
 #define PERF_BUFFER_PAGES 16
@@ -99,6 +101,11 @@ static void sig_int(int signo) {
 
 void handle_event(void* ctx, int cpu, void* data, __u32 data_sz) {
     const struct event* e = data;
+    if (strcmp(e->func, "tcp_v4_connect") == 0) {
+
+    } else if (strcmp(e->func, "tcp_rcv_state_process") == 0){ 
+
+    }
     char src[INET6_ADDRSTRLEN];
     char dst[INET6_ADDRSTRLEN];
     union {
@@ -121,16 +128,16 @@ void handle_event(void* ctx, int cpu, void* data, __u32 data_sz) {
     // }
 
     if (env.lport) {
-        printf("%-6d %-12.12s %-2d %-16s %-6d %-16s %-5d %.2f %s %s %s\n", e->tgid,
+        printf("%-6d %-12.12s %-2d %-16s %-6d %-16s %-5d %.2f %s %s %s %lld\n", e->tgid,
                e->comm, e->af == AF_INET ? 4 : 6,
                inet_ntop(e->af, &s, src, sizeof(src)), e->lport,
                inet_ntop(e->af, &d, dst, sizeof(dst)), ntohs(e->dport),
-               e->delta_us / 1000.0, e->func, e->tcp_state, e->tcp_description);
+               e->delta_us / 1000.0, e->func, e->tcp_state, e->tcp_description, e->tcp_connect_time);
     } else {
-        printf("%-6d %-12.12s %-2d %-16s %-16s %-5d %.2f %s %s %s\n", e->tgid, e->comm,
+        printf("%-6d %-12.12s %-2d %-16s %-16s %-5d %.2f %s %s %s %lld\n", e->tgid, e->comm,
                e->af == AF_INET ? 4 : 6, inet_ntop(e->af, &s, src, sizeof(src)),
                inet_ntop(e->af, &d, dst, sizeof(dst)), ntohs(e->dport),
-               e->delta_us / 1000.0, e->func, e->tcp_state, e->tcp_description);
+               e->delta_us / 1000.0, e->func, e->tcp_state, e->tcp_description, e->tcp_connect_time);
     }
 }
 
@@ -251,11 +258,11 @@ int main(int argc, char** argv) {
     if (env.timestamp)
         printf("%-9s ", ("TIME(s)"));
     if (env.lport) {
-        printf("%-6s %-12s %-2s %-16s %-6s %-16s %-5s %s %s %s %s\n", "PID", "COMM",
-               "IP", "SADDR", "LPORT", "DADDR", "DPORT", "TIMESTAMP(ms)", "FUNC", "TCP_STATE", "TCP_DESCRIPTION");
+        printf("%-6s %-12s %-2s %-16s %-6s %-16s %-5s %s %s %s %s %s\n", "PID", "COMM",
+               "IP", "SADDR", "LPORT", "DADDR", "DPORT", "TIMESTAMP(ms)", "FUNC", "TCP_STATE", "TCP_DESCRIPTION", "TCP_CONNECT_TIME(us)");
     } else {
-        printf("%-6s %-12s %-2s %-16s %-16s %-5s %s %s %s %s\n", "PID", "COMM", "IP",
-               "SADDR", "DADDR", "DPORT", "TIMESTAMP(ms)", "FUNC", "TCP_STATE", "TCP_DESCRIPTION");
+        printf("%-6s %-12s %-2s %-16s %-16s %-5s %s %s %s %s %s\n", "PID", "COMM", "IP",
+               "SADDR", "DADDR", "DPORT", "TIMESTAMP(ms)", "FUNC", "TCP_STATE", "TCP_DESCRIPTION", "TCP_CONNECT_TIME(us)");
     }
 
     if (signal(SIGINT, sig_int) == SIG_ERR) {

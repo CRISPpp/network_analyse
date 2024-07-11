@@ -39,6 +39,13 @@ const char* get_tcp_state(u32 state) {
 }
 
 struct {
+  __uint(type, BPF_MAP_TYPE_HASH);
+  __uint(max_entries, 4096);
+  __type(key, struct sock *);
+  __type(value, struct piddata);
+} connect SEC(".maps");
+
+struct {
 	__uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
 	__uint(key_size, sizeof(u32));
 	__uint(value_size, sizeof(u32));
@@ -47,6 +54,8 @@ struct {
 static int handle_tcp_rcv_state_process(void *ctx, struct sock *sk)
 {
 	struct event event = {};
+	event.tcp_connect_time = 0;
+
 	u64 ts;
 	u32 tgid = bpf_get_current_pid_tgid() >> 32;
 
@@ -54,7 +63,7 @@ static int handle_tcp_rcv_state_process(void *ctx, struct sock *sk)
 
 	event.delta_us = ts / 1000U;
 	if (targ_min_us && event.delta_us < targ_min_us)
-		goto cleanup;
+		return 0;
 	u32 state = BPF_CORE_READ(sk, __sk_common.skc_state);
 	bpf_get_current_comm(&event.comm, sizeof(event.comm));
 	char* description = "transfer into new state";
@@ -78,17 +87,26 @@ static int handle_tcp_rcv_state_process(void *ctx, struct sock *sk)
 		BPF_CORE_READ_INTO(&event.daddr_v6, sk,
 				__sk_common.skc_v6_daddr.in6_u.u6_addr32);
 	}
-
+	if (BPF_CORE_READ(sk, __sk_common.skc_state) == TCP_SYN_SENT) {
+		struct piddata* pd = bpf_map_lookup_elem(&connect, &sk);
+		if (!pd) {
+			bpf_map_delete_elem(&connect, &sk);
+		} else {
+			event.tcp_connect_time = event.ts_us - pd->ts;
+			bpf_map_delete_elem(&connect, &sk);
+		}
+		
+	}
 	bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU,
 			&event, sizeof(event));
 
-	cleanup:
 	return 0;
 }
 
 static int handle_tcp_v4_connect(void *ctx, struct sock *sk)
 {
 	struct event event = {};
+	event.tcp_connect_time = 0;
 	u64 ts;
 	u32 tgid = bpf_get_current_pid_tgid() >> 32;
 
@@ -96,7 +114,7 @@ static int handle_tcp_v4_connect(void *ctx, struct sock *sk)
 	u32 state = BPF_CORE_READ(sk, __sk_common.skc_state);
 	event.delta_us = ts / 1000U;
 	if (targ_min_us && event.delta_us < targ_min_us)
-		goto cleanup;
+		return 0;
 	bpf_get_current_comm(&event.comm, sizeof(event.comm));
 	memcpy(event.func, "tcp_v4_connect", sizeof(event.func));
 	const char* description = "client send SYN packet";
@@ -117,10 +135,16 @@ static int handle_tcp_v4_connect(void *ctx, struct sock *sk)
 		BPF_CORE_READ_INTO(&event.daddr_v6, sk,
 				__sk_common.skc_v6_daddr.in6_u.u6_addr32);
 	}
+	struct piddata pd = {};
+	bpf_get_current_comm(&pd.comm, sizeof(pd.comm));
+	pd.tgid = tgid;
+	pd.ts = ts / 1000U;
+ 	bpf_map_update_elem(&connect, &sk, &pd, 0);
+
 	bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU,
 			&event, sizeof(event));
 
-cleanup:
+
 	return 0;
 }
 

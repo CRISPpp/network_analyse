@@ -1,9 +1,16 @@
 #include <stdio.h>
 #include <string.h>
+#include <iostream>
 #include <signal.h>
+
+#include "../utils.cpp"
 
 char tcp_state_str[12][30];
 char tcp_state[32];
+struct event {
+    unsigned int tgid;
+    char comm[128];
+};
 
 const char* get_state(unsigned int state) {
     switch (state) {
@@ -28,6 +35,16 @@ static void sig_int(int signo) {
     exiting = 1;
 }
 
+void test_get_sys_start_timestamp_us() {
+    std::cout << get_sys_start_timestamp_us() << std::endl;
+}
+
+int test_cstr_eq() {
+    char t[128];
+    strcpy(t, "12345");
+    return strcmp(t, "12345");
+}
+
 int main() {
     if (signal(SIGINT, sig_int) == SIG_ERR) {
         fprintf(stderr, "can't set signal handler: %s\n", "error");
@@ -35,7 +52,4 @@ int main() {
     while (exiting == 0) {
         ;
     }
-    
-    memcpy(tcp_state, get_state(2), 32);
-    printf("%s", tcp_state);
 }
