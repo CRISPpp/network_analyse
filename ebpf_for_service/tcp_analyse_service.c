@@ -98,6 +98,36 @@ static void sig_int(int signo) {
     exiting = 1;
 }
 
+void handle_tcp_recvmsg_event(void* ctx, int cpu, void* data, __u32 data_sz) {
+    const struct event* e = data;
+    char src[INET6_ADDRSTRLEN];
+    char dst[INET6_ADDRSTRLEN];
+    union {
+        struct in_addr x4;
+        struct in6_addr x6;
+    } s, d;
+    pid_t e_pid = e->tgid;
+    if (env.pid != 0 && e_pid != env.pid) {
+        return;
+    }
+    s.x4.s_addr = e->saddr_v4;
+    d.x4.s_addr = e->daddr_v4;
+
+    if (env.lport) {
+        printf("%-6d %-12.12s %-2d %-16s %-6d %-16s %-5d %lld %s %s %s\n", e->tgid,
+               e->comm, e->af == AF_INET ? 4 : 6,
+               inet_ntop(e->af, &s, src, sizeof(src)), e->lport,
+               inet_ntop(e->af, &d, dst, sizeof(dst)), ntohs(e->dport),
+               e->delta_us, e->func, e->tcp_state, e->tcp_description);
+    } else {
+        printf("%-6d %-12.12s %-2d %-16s %-16s %-5d %lld %s %s %s\n", e->tgid, e->comm,
+               e->af == AF_INET ? 4 : 6, inet_ntop(e->af, &s, src, sizeof(src)),
+               inet_ntop(e->af, &d, dst, sizeof(dst)), ntohs(e->dport),
+               e->delta_us, e->func, e->tcp_state, e->tcp_description);
+    }
+}
+
+
 void handle_event(void* ctx, int cpu, void* data, __u32 data_sz) {
     const struct event* e = data;
     char src[INET6_ADDRSTRLEN];
@@ -193,6 +223,7 @@ int main(int argc, char** argv) {
         .doc = argp_program_doc,
     };
     struct perf_buffer* pb = NULL;
+    struct perf_buffer* tcp_rcvmgs_pb = NULL;
     struct tcp_analyse_service_bpf* obj;
     int err;
 
@@ -230,6 +261,14 @@ int main(int argc, char** argv) {
                                   false);
     }
 
+    if (fentry_can_attach("tcp_recvmsg", NULL)) {
+        bpf_program__set_attach_target(obj->progs.fentry_tcp_recvmsg,
+                                       0, "tcp_recvmsg");
+    } else {
+        bpf_program__set_autoload(obj->progs.fentry_tcp_recvmsg,
+                                  false);
+    }
+
     err = tcp_analyse_service_bpf__load(obj);
     if (err) {
         fprintf(stderr, "failed to load BPF object: %d\n", err);
@@ -243,11 +282,17 @@ int main(int argc, char** argv) {
 
     pb = perf_buffer__new(bpf_map__fd(obj->maps.events), PERF_BUFFER_PAGES,
                           handle_event, handle_lost_events, NULL, NULL);
+    tcp_rcvmgs_pb = perf_buffer__new(bpf_map__fd(obj->maps.tcp_recvmsg_events), PERF_BUFFER_PAGES,
+                          handle_tcp_recvmsg_event, handle_lost_events, NULL, NULL);
+    
     if (!pb) {
         fprintf(stderr, "failed to open perf buffer: %d\n", errno);
         goto cleanup;
     }
-
+    if (!tcp_rcvmgs_pb) {
+        fprintf(stderr, "failed to open perf buffer: %d\n", errno);
+        goto cleanup;
+    }
     /* print header */
     if (env.timestamp)
         printf("%-9s ", ("TIME(s)"));
@@ -272,12 +317,18 @@ int main(int argc, char** argv) {
             fprintf(stderr, "error polling perf buffer: %s\n", strerror(-err));
             goto cleanup;
         }
+        err = perf_buffer__poll(tcp_rcvmgs_pb, PERF_POLL_TIMEOUT_MS);
+        if (err < 0 && err != -EINTR) {
+            fprintf(stderr, "error polling perf buffer: %s\n", strerror(-err));
+            goto cleanup;
+        }
         /* reset err to return 0 if exiting */
         err = 0;
     }
 
 cleanup:
     perf_buffer__free(pb);
+    perf_buffer__free(tcp_rcvmgs_pb);
     tcp_analyse_service_bpf__destroy(obj);
 
     return err != 0;
