@@ -101,11 +101,6 @@ static void sig_int(int signo) {
 
 void handle_event(void* ctx, int cpu, void* data, __u32 data_sz) {
     const struct event* e = data;
-    if (strcmp(e->func, "tcp_v4_connect") == 0) {
-
-    } else if (strcmp(e->func, "tcp_rcv_state_process") == 0){ 
-
-    }
     char src[INET6_ADDRSTRLEN];
     char dst[INET6_ADDRSTRLEN];
     union {
@@ -132,12 +127,12 @@ void handle_event(void* ctx, int cpu, void* data, __u32 data_sz) {
                e->comm, e->af == AF_INET ? 4 : 6,
                inet_ntop(e->af, &s, src, sizeof(src)), e->lport,
                inet_ntop(e->af, &d, dst, sizeof(dst)), ntohs(e->dport),
-               e->delta_us / 1000.0, e->func, e->tcp_state, e->tcp_description, e->tcp_connect_time);
+               e->delta_us, e->func, e->tcp_state, e->tcp_description, e->tcp_connect_time);
     } else {
         printf("%-6d %-12.12s %-2d %-16s %-16s %-5d %.2f %s %s %s %lld\n", e->tgid, e->comm,
                e->af == AF_INET ? 4 : 6, inet_ntop(e->af, &s, src, sizeof(src)),
                inet_ntop(e->af, &d, dst, sizeof(dst)), ntohs(e->dport),
-               e->delta_us / 1000.0, e->func, e->tcp_state, e->tcp_description, e->tcp_connect_time);
+               e->delta_us, e->func, e->tcp_state, e->tcp_description, e->tcp_connect_time);
     }
 }
 
