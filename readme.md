@@ -1,8 +1,9 @@
 # a project to analyse network latency developed CRISPpp
 # USAGE
 ## ebpf config for ubuntu
+
 ```
-sudo apt install make clang llvm libelf1 libelf-dev zlib1g-dev bpfcc-tools linux-headers-$(uname -r)
+sudo apt install make clang llvm libelf1 libelf-dev zlib1g-dev bpfcc-tools linux-headers-$(uname -r) g++-multilib
 ```
 if you cant not get vmlinux.h, you can generate it with command below
 ```

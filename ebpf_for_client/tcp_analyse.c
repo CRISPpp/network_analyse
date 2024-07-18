@@ -192,6 +192,37 @@ static bool fentry_can_attach(const char* name, const char* mod) {
     return id > 0 && fentry_try_attach(id);
 }
 
+
+void handle_tcp_sendmsg_event(void* ctx, int cpu, void* data, __u32 data_sz) {
+    const struct event* e = data;
+    char src[INET6_ADDRSTRLEN];
+    char dst[INET6_ADDRSTRLEN];
+    union {
+        struct in_addr x4;
+        struct in6_addr x6;
+    } s, d;
+    pid_t e_pid = e->tgid;
+    if (env.pid != 0 && e_pid != env.pid) {
+        return;
+    }
+    s.x4.s_addr = e->saddr_v4;
+    d.x4.s_addr = e->daddr_v4;
+
+    if (env.lport) {
+        printf("%-6d %-12.12s %-2d %-16s %-6d %-16s %-5d %lld %s %s %s\n", e->tgid,
+               e->comm, e->af == AF_INET ? 4 : 6,
+               inet_ntop(e->af, &s, src, sizeof(src)), e->lport,
+               inet_ntop(e->af, &d, dst, sizeof(dst)), ntohs(e->dport),
+               e->delta_us, e->func, e->tcp_state, e->tcp_description);
+    } else {
+        printf("%-6d %-12.12s %-2d %-16s %-16s %-5d %lld %s %s %s\n", e->tgid, e->comm,
+               e->af == AF_INET ? 4 : 6, inet_ntop(e->af, &s, src, sizeof(src)),
+               inet_ntop(e->af, &d, dst, sizeof(dst)), ntohs(e->dport),
+               e->delta_us, e->func, e->tcp_state, e->tcp_description);
+    }
+}
+
+
 int main(int argc, char** argv) {
     static const struct argp argp = {
         .options = opts,
@@ -199,6 +230,7 @@ int main(int argc, char** argv) {
         .doc = argp_program_doc,
     };
     struct perf_buffer* pb = NULL;
+    struct perf_buffer* tcp_sendmsg_pb = NULL;
     struct tcp_analyse_bpf* obj;
     int err;
 
@@ -236,6 +268,14 @@ int main(int argc, char** argv) {
                                   false);
     }
 
+    if (fentry_can_attach("tcp_sendmsg", NULL)) {
+        bpf_program__set_attach_target(obj->progs.fentry_tcp_sendmsg,
+                                       0, "tcp_sendmsg");
+    } else {
+        bpf_program__set_autoload(obj->progs.fentry_tcp_sendmsg,
+                                  false);
+    }
+
     err = tcp_analyse_bpf__load(obj);
     if (err) {
         fprintf(stderr, "failed to load BPF object: %d\n", err);
@@ -249,6 +289,12 @@ int main(int argc, char** argv) {
 
     pb = perf_buffer__new(bpf_map__fd(obj->maps.events), PERF_BUFFER_PAGES,
                           handle_event, handle_lost_events, NULL, NULL);
+    tcp_sendmsg_pb = perf_buffer__new(bpf_map__fd(obj->maps.tcp_sendmsg_events), PERF_BUFFER_PAGES,
+                          handle_tcp_sendmsg_event, handle_lost_events, NULL, NULL);
+    if (!tcp_sendmsg_pb) {
+        fprintf(stderr, "failed to open perf buffer: %d\n", errno);
+        goto cleanup;
+    }
     if (!pb) {
         fprintf(stderr, "failed to open perf buffer: %d\n", errno);
         goto cleanup;
@@ -259,10 +305,10 @@ int main(int argc, char** argv) {
         printf("%-9s ", ("TIME(s)"));
     if (env.lport) {
         printf("%-6s %-12s %-2s %-16s %-6s %-16s %-5s %s %s %s %s %s\n", "PID", "COMM",
-               "IP", "SADDR", "LPORT", "DADDR", "DPORT", "TIMESTAMP(ms)", "FUNC", "TCP_STATE", "TCP_DESCRIPTION", "TCP_CONNECT_TIME(us)");
+               "IP", "SADDR", "LPORT", "DADDR", "DPORT", "TIMESTAMP(us)", "FUNC", "TCP_STATE", "TCP_DESCRIPTION", "TCP_CONNECT_TIME(us)");
     } else {
         printf("%-6s %-12s %-2s %-16s %-16s %-5s %s %s %s %s %s\n", "PID", "COMM", "IP",
-               "SADDR", "DADDR", "DPORT", "TIMESTAMP(ms)", "FUNC", "TCP_STATE", "TCP_DESCRIPTION", "TCP_CONNECT_TIME(us)");
+               "SADDR", "DADDR", "DPORT", "TIMESTAMP(us)", "FUNC", "TCP_STATE", "TCP_DESCRIPTION", "TCP_CONNECT_TIME(us)");
     }
 
     if (signal(SIGINT, sig_int) == SIG_ERR) {
@@ -278,12 +324,18 @@ int main(int argc, char** argv) {
             fprintf(stderr, "error polling perf buffer: %s\n", strerror(-err));
             goto cleanup;
         }
+        err = perf_buffer__poll(tcp_sendmsg_pb, PERF_POLL_TIMEOUT_MS);
+        if (err < 0 && err != -EINTR) {
+            fprintf(stderr, "error polling perf buffer: %s\n", strerror(-err));
+            goto cleanup;
+        }
         /* reset err to return 0 if exiting */
         err = 0;
     }
 
 cleanup:
     perf_buffer__free(pb);
+    perf_buffer__free(tcp_sendmsg_pb);
     tcp_analyse_bpf__destroy(obj);
 
     return err != 0;

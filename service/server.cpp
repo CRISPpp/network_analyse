@@ -66,43 +66,48 @@ int main()
         {
             error("ERROR on accept");
         }
+        while (true) {
+            // 接收数据
+            struct msghdr msg;
+            struct iovec iov;
+            char control[1024];
+            struct cmsghdr *cmsg;
+            struct timeval *tv;
 
-        // 接收数据
-        struct msghdr msg;
-        struct iovec iov;
-        char control[1024];
-        struct cmsghdr *cmsg;
-        struct timeval *tv;
+            bzero(buffer, 256);
+            bzero(&msg, sizeof(msg));
+            bzero(control, sizeof(control));
 
-        bzero(buffer, 256);
-        bzero(&msg, sizeof(msg));
-        bzero(control, sizeof(control));
+            iov.iov_base = buffer;
+            iov.iov_len = sizeof(buffer);
+            msg.msg_iov = &iov;
+            msg.msg_iovlen = 1;
+            msg.msg_control = control;
+            msg.msg_controllen = sizeof(control);
 
-        iov.iov_base = buffer;
-        iov.iov_len = sizeof(buffer);
-        msg.msg_iov = &iov;
-        msg.msg_iovlen = 1;
-        msg.msg_control = control;
-        msg.msg_controllen = sizeof(control);
-
-        n = recvmsg(newsockfd, &msg, 0);
-        if (n < 0)
-        {
-            error("ERROR reading from socket");
-        }
-        tv_message data;
-
-        // 解析控制消息
-        for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != nullptr; cmsg = CMSG_NXTHDR(&msg, cmsg))
-        {
-            if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SO_TIMESTAMP)
+            n = recvmsg(newsockfd, &msg, 0);
+            if (n < 0)
             {
-                tv = (struct timeval *)CMSG_DATA(cmsg);
-                data.server_cmsg_tv = *tv;
-                std::cout << "Packet received at: " << tv->tv_sec << "." << tv->tv_usec << " seconds" << std::endl;
-                struct timeval cur_time = get_current_timeval();
-                std::cout << "Network stack processing time: " << cur_time.tv_sec - tv->tv_sec << "." << cur_time.tv_usec - tv->tv_usec << " seconds" << std::endl;
+                error("ERROR reading from socket");
             }
+            if (n == 0) {
+                break;
+            }
+            std::cout << "Received message: " << buffer << std::endl;
+
+            tv_message data;
+
+            // 解析控制消息
+            for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != nullptr; cmsg = CMSG_NXTHDR(&msg, cmsg))
+            {
+                if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SO_TIMESTAMP)
+                {
+                    tv = (struct timeval *)CMSG_DATA(cmsg);
+                    data.server_cmsg_tv = *tv;
+                    std::cout << "Packet received at: " << tv->tv_sec << "." << tv->tv_usec << " seconds" << std::endl;
+                    struct timeval cur_time = get_current_timeval();
+                    std::cout << "Network stack processing time: " << cur_time.tv_sec - tv->tv_sec << "." << cur_time.tv_usec - tv->tv_usec << " seconds" << std::endl;
+                }
         }
 
         // 发送数据
@@ -110,15 +115,15 @@ int main()
         // 添加附加时间戳
         timeval send_tv = get_current_timeval();
         std::cout << "current timestamp: " << send_tv.tv_sec << "." << send_tv.tv_usec << " seconds\n" << std::endl;
-
-        data.server_sock_tv = send_tv;
-        strncpy(data.message, response.c_str(), 255);
-
-        n = write(newsockfd, &data, sizeof(data));
-        if (n < 0)
-        {
-            error("ERROR writing to socket");
         }
+        // data.server_sock_tv = send_tv;
+        // strncpy(data.message, response.c_str(), 255);
+
+        // n = write(newsockfd, &data, sizeof(data));
+        // if (n < 0)
+        // {
+        //     error("ERROR writing to socket");
+        // }
 
     // 关闭连接
     close(newsockfd);

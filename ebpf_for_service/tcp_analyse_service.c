@@ -223,7 +223,7 @@ int main(int argc, char** argv) {
         .doc = argp_program_doc,
     };
     struct perf_buffer* pb = NULL;
-    struct perf_buffer* tcp_rcvmgs_pb = NULL;
+    struct perf_buffer* tcp_recvmsg_pb = NULL;
     struct tcp_analyse_service_bpf* obj;
     int err;
 
@@ -282,14 +282,14 @@ int main(int argc, char** argv) {
 
     pb = perf_buffer__new(bpf_map__fd(obj->maps.events), PERF_BUFFER_PAGES,
                           handle_event, handle_lost_events, NULL, NULL);
-    tcp_rcvmgs_pb = perf_buffer__new(bpf_map__fd(obj->maps.tcp_recvmsg_events), PERF_BUFFER_PAGES,
+    tcp_recvmsg_pb = perf_buffer__new(bpf_map__fd(obj->maps.tcp_recvmsg_events), PERF_BUFFER_PAGES,
                           handle_tcp_recvmsg_event, handle_lost_events, NULL, NULL);
     
     if (!pb) {
         fprintf(stderr, "failed to open perf buffer: %d\n", errno);
         goto cleanup;
     }
-    if (!tcp_rcvmgs_pb) {
+    if (!tcp_recvmsg_pb) {
         fprintf(stderr, "failed to open perf buffer: %d\n", errno);
         goto cleanup;
     }
@@ -298,10 +298,10 @@ int main(int argc, char** argv) {
         printf("%-9s ", ("TIME(s)"));
     if (env.lport) {
         printf("%-6s %-12s %-2s %-16s %-6s %-16s %-5s %s %s %s %s\n", "PID", "COMM",
-               "IP", "SADDR", "LPORT", "DADDR", "DPORT", "TIMESTAMP(ms)", "FUNC", "TCP_STATE", "TCP_DESCRIPTION");
+               "IP", "SADDR", "LPORT", "DADDR", "DPORT", "TIMESTAMP(us)", "FUNC", "TCP_STATE", "TCP_DESCRIPTION");
     } else {
         printf("%-6s %-12s %-2s %-16s %-16s %-5s %s %s %s %s\n", "PID", "COMM", "IP",
-               "SADDR", "DADDR", "DPORT", "TIMESTAMP(ms)", "FUNC", "TCP_STATE", "TCP_DESCRIPTION");
+               "SADDR", "DADDR", "DPORT", "TIMESTAMP(us)", "FUNC", "TCP_STATE", "TCP_DESCRIPTION");
     }
 
     if (signal(SIGINT, sig_int) == SIG_ERR) {
@@ -317,7 +317,7 @@ int main(int argc, char** argv) {
             fprintf(stderr, "error polling perf buffer: %s\n", strerror(-err));
             goto cleanup;
         }
-        err = perf_buffer__poll(tcp_rcvmgs_pb, PERF_POLL_TIMEOUT_MS);
+        err = perf_buffer__poll(tcp_recvmsg_pb, PERF_POLL_TIMEOUT_MS);
         if (err < 0 && err != -EINTR) {
             fprintf(stderr, "error polling perf buffer: %s\n", strerror(-err));
             goto cleanup;
@@ -328,7 +328,7 @@ int main(int argc, char** argv) {
 
 cleanup:
     perf_buffer__free(pb);
-    perf_buffer__free(tcp_rcvmgs_pb);
+    perf_buffer__free(tcp_recvmsg_pb);
     tcp_analyse_service_bpf__destroy(obj);
 
     return err != 0;

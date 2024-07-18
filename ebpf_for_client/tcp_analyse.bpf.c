@@ -39,6 +39,12 @@ const char* get_tcp_state(u32 state) {
 }
 
 struct {
+	__uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
+	__uint(key_size, sizeof(u32));
+	__uint(value_size, sizeof(u32));
+} tcp_sendmsg_events SEC(".maps");
+
+struct {
   __uint(type, BPF_MAP_TYPE_HASH);
   __uint(max_entries, 4096);
   __type(key, struct sock *);
@@ -50,6 +56,46 @@ struct {
 	__uint(key_size, sizeof(u32));
 	__uint(value_size, sizeof(u32));
 } events SEC(".maps");
+
+
+static int handle_tcp_sendmsg(void *ctx, struct sock *sk)
+{
+	struct event event = {};
+	u64 ts;
+	u32 tgid = bpf_get_current_pid_tgid() >> 32;
+
+	ts = (s64)bpf_ktime_get_ns();
+	u32 state = BPF_CORE_READ(sk, __sk_common.skc_state);
+	event.delta_us = ts / 1000U;
+	if (targ_min_us && event.delta_us < targ_min_us)
+		goto cleanup;
+	bpf_get_current_comm(&event.comm, sizeof(event.comm));
+	memcpy(event.func, "tcp_sendmsg", sizeof(event.func));
+	const char* description = "client send message";
+	memcpy(event.tcp_description, description, sizeof(event.tcp_description));
+	memcpy(event.tcp_state, get_tcp_state(state), sizeof(event.tcp_state));
+	event.ts_us = ts / 1000;
+	event.tgid = tgid;
+	event.lport = BPF_CORE_READ(sk, __sk_common.skc_num);
+	event.dport = BPF_CORE_READ(sk, __sk_common.skc_dport);
+	event.af = BPF_CORE_READ(sk, __sk_common.skc_family);
+
+	if (event.af == AF_INET) {
+		event.saddr_v4 = BPF_CORE_READ(sk, __sk_common.skc_rcv_saddr);
+		event.daddr_v4 = BPF_CORE_READ(sk, __sk_common.skc_daddr);
+	} else {
+		BPF_CORE_READ_INTO(&event.saddr_v6, sk,
+				__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32);
+		BPF_CORE_READ_INTO(&event.daddr_v6, sk,
+				__sk_common.skc_v6_daddr.in6_u.u6_addr32);
+	}
+	bpf_perf_event_output(ctx, &tcp_sendmsg_events, BPF_F_CURRENT_CPU,
+			&event, sizeof(event));
+
+cleanup:
+	return 0;
+}
+
 
 static int handle_tcp_rcv_state_process(void *ctx, struct sock *sk)
 {
@@ -160,5 +206,11 @@ int BPF_PROG(fentry_tcp_v4_connect, struct sock *sk)
 {
 	return handle_tcp_v4_connect(ctx, sk);
 }
+
+SEC("fentry/tcp_sendmsg")
+int BPF_PROG(fentry_tcp_sendmsg, struct sock *sk) {
+	return handle_tcp_sendmsg(ctx, sk);
+}
+
 
 char LICENSE[] SEC("license") = "GPL";
