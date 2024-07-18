@@ -140,16 +140,14 @@ void handle_event(void* ctx, int cpu, void* data, __u32 data_sz) {
     if (env.pid != 0 && e_pid != env.pid) {
         return;
     }
-    // if (e->af == AF_INET) {
+    if (e->af == AF_INET) {
         s.x4.s_addr = e->saddr_v4;
         d.x4.s_addr = e->daddr_v4;
-    // } 
-    // else if (e->af == AF_INET6) {
-    //     memcpy(&s.x6.s6_addr, e->saddr_v6, sizeof(s.x6.s6_addr));
-    //     memcpy(&d.x6.s6_addr, e->daddr_v6, sizeof(d.x6.s6_addr));
-    // } else {
-    //     return;
-    // }
+    } 
+    else if (e->af == AF_INET6) {
+        memcpy(&s.x6.s6_addr, e->saddr_v6, sizeof(s.x6.s6_addr));
+        memcpy(&d.x6.s6_addr, e->daddr_v6, sizeof(d.x6.s6_addr));
+    }
 
     if (env.lport) {
         printf("%-6d %-12.12s %-2d %-16s %-6d %-16s %-5d %lld %s %s %s\n", e->tgid,
@@ -259,7 +257,16 @@ int main(int argc, char** argv) {
     } else {
         bpf_program__set_autoload(obj->progs.fentry_tcp_v4_do_rcv,
                                   false);
-    }
+    
+        // 这里的函数名是内核函数名
+    if (fentry_can_attach("tcp_rcv_state_process", NULL)) {
+        bpf_program__set_attach_target(obj->progs.fentry_tcp_rcv_state_process,
+                                       0, "tcp_rcv_state_process");
+    } else {
+        bpf_program__set_autoload(obj->progs.fentry_tcp_rcv_state_process,
+                                  false);
+    }}
+
 
     if (fentry_can_attach("tcp_recvmsg", NULL)) {
         bpf_program__set_attach_target(obj->progs.fentry_tcp_recvmsg,

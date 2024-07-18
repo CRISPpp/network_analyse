@@ -123,13 +123,13 @@ void handle_event(void* ctx, int cpu, void* data, __u32 data_sz) {
     // }
 
     if (env.lport) {
-        printf("%-6d %-12.12s %-2d %-16s %-6d %-16s %-5d %.2f %s %s %s %lld\n", e->tgid,
+        printf("%-6d %-12.12s %-2d %-16s %-6d %-16s %-5d %lld %s %s %s %lld\n", e->tgid,
                e->comm, e->af == AF_INET ? 4 : 6,
                inet_ntop(e->af, &s, src, sizeof(src)), e->lport,
                inet_ntop(e->af, &d, dst, sizeof(dst)), ntohs(e->dport),
                e->delta_us, e->func, e->tcp_state, e->tcp_description, e->tcp_connect_time);
     } else {
-        printf("%-6d %-12.12s %-2d %-16s %-16s %-5d %.2f %s %s %s %lld\n", e->tgid, e->comm,
+        printf("%-6d %-12.12s %-2d %-16s %-16s %-5d %lld %s %s %s %lld\n", e->tgid, e->comm,
                e->af == AF_INET ? 4 : 6, inet_ntop(e->af, &s, src, sizeof(src)),
                inet_ntop(e->af, &d, dst, sizeof(dst)), ntohs(e->dport),
                e->delta_us, e->func, e->tcp_state, e->tcp_description, e->tcp_connect_time);
