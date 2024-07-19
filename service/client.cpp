@@ -26,7 +26,7 @@ int main()
         int sockfd, portno = 9999;
         struct sockaddr_in serv_addr;
         struct hostent *server;
-        char buffer[256];
+        char buffer[4096];
 
         // 创建socket
         sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -62,23 +62,14 @@ int main()
         }
 
         // 发送数据
-        std::string message = "Hello from client!";
-        bzero(buffer, 256);
-        strncpy(buffer, message.c_str(), 255);
+        std::string message = generateRandomString();
+        bzero(buffer, sizeof(buffer));
+        strncpy(buffer, message.c_str(), sizeof(buffer));
         int n = write(sockfd, buffer, strlen(buffer));
         if (n < 0)
         {
             error("ERROR writing to socket");
         }
-        message = "hellow from client2";
-        bzero(buffer, 256);
-        strncpy(buffer, message.c_str(), 255);
-        n = write(sockfd, buffer, strlen(buffer));
-        if (n < 0)
-        {
-            error("ERROR writing to socket");
-        }
-        
         // // 接收数据
         // struct msghdr msg;
         // struct iovec iov;

@@ -21,7 +21,7 @@ int main()
 {
     int sockfd, portno = 9999;
     socklen_t clilen;
-    char buffer[256];
+    char buffer[4096];
     struct sockaddr_in serv_addr, cli_addr;
     int n;
     pid_t pid = getpid();
@@ -74,7 +74,7 @@ int main()
             struct cmsghdr *cmsg;
             struct timeval *tv;
 
-            bzero(buffer, 256);
+            bzero(buffer, sizeof(buffer));
             bzero(&msg, sizeof(msg));
             bzero(control, sizeof(control));
 
@@ -104,9 +104,9 @@ int main()
                 {
                     tv = (struct timeval *)CMSG_DATA(cmsg);
                     data.server_cmsg_tv = *tv;
-                    std::cout << "Packet received at: " << tv->tv_sec << "." << tv->tv_usec << " seconds" << std::endl;
+                    std::cout << "Packet received at: " << tv->tv_sec << "." << (float)tv->tv_usec / 1000000 << " seconds" << std::endl;
                     struct timeval cur_time = get_current_timeval();
-                    std::cout << "Network stack processing time: " << cur_time.tv_sec - tv->tv_sec << "." << cur_time.tv_usec - tv->tv_usec << " seconds" << std::endl;
+                    std::cout << "Network stack processing time: " << cur_time.tv_sec - tv->tv_sec << "." << (float)(cur_time.tv_usec - tv->tv_usec) / 1000000 << " seconds" << std::endl;
                 }
         }
 
@@ -114,7 +114,7 @@ int main()
         std::string response = "Hello from server!";
         // 添加附加时间戳
         timeval send_tv = get_current_timeval();
-        std::cout << "current timestamp: " << send_tv.tv_sec << "." << send_tv.tv_usec << " seconds\n" << std::endl;
+        std::cout << "current timestamp: " << send_tv.tv_sec << "." << (float)send_tv.tv_usec / 1000000 << " seconds\n" << std::endl;
         }
         // data.server_sock_tv = send_tv;
         // strncpy(data.message, response.c_str(), 255);
