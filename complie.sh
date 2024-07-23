@@ -13,6 +13,7 @@ g++ ./service/client.cpp -o ./bin/client
 g++ ./test/test.cpp -o ./bin/test
 g++ ./test/readshm.c -o ./bin/readshm
 g++ ./test/writeshm.c -o ./bin/writeshm
+g++ ./test/test_server.cpp -o ./bin/test_server
 
 
 make -C ./ebpf_for_service -j

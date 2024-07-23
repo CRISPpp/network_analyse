@@ -2,7 +2,31 @@
 #include <iostream>
 #include <chrono>
 #include <string>
+#include <vector>
 #include <random>
+
+using namespace std;
+class Solution {
+public:
+    int minimumLevels(vector<int>& possible) {
+        int n = possible.size();
+        vector<int> left(n, possible[0] == 1 ? 1 : 0);
+        vector<int> right(n, possible[n - 1] == 1 ? 1 : 0);
+
+        for (int i = 1; i < n; i ++) {
+            left[i] = left[i - 1] + (possible[i] == 1 ? 1 : 0);
+            right[n - 1 - i] = right[n - i] + (possible[n - i - 1] == 1 ? 1 : 0);
+        }
+
+        for (int i = 0; i < n - 1; i ++) {
+            int l = left[i];
+            int r = right[i] - (possible[i] == 1 ? 1 : 0);
+            if (l > r) return i;
+        }
+
+        return -1;
+    }
+};
 
 timeval get_current_timeval() {
     struct timeval cur_time;
