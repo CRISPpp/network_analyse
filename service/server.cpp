@@ -9,7 +9,7 @@
 #include <vector>
 #include <signal.h>
 
-#include "../common.cpp"
+#include "../common/common.cpp"
 #include "../utils.cpp"
 
 #define PORT 9999

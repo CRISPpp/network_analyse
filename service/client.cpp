@@ -9,7 +9,7 @@
 #include <signal.h>
 
 #include "../utils.cpp"
-#include "../common.cpp"
+#include "../common/common.cpp"
 
 static volatile sig_atomic_t exiting = 0;
 static void sig_int(int signo) {
