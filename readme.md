@@ -37,3 +37,8 @@ ip link set dev lo xdpgeneric obj ../bin/xdp_xxx.o sec xdp
 ```
 ip link set dev lo xdpgeneric off
 ```
+
+## show debug log
+```
+cat /sys/kernel/debug/tracing/trace_pipe 
+```
