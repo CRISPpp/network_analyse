@@ -28,3 +28,12 @@ bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
 ./bin/tcp_analyse_service -p $(PID from test service demo)
 ./bin/tcp_analyse -p $(PID from test client demo)
 ```
+
+## load xdp part
+```
+ip link set dev lo xdpgeneric obj ../bin/xdp_xxx.o sec xdp
+```
+## remove xdp part
+```
+ip link set dev lo xdpgeneric off
+```

@@ -109,7 +109,7 @@ $(COMMON_OBJS):	%.o: %.h
 	$(Q)$(MAKE) -C $(COMMON_DIR)
 
 $(USER_TARGETS): %: %.c  $(OBJECT_LIBBPF) $(OBJECT_LIBXDP) Makefile $(COMMON_MK) $(COMMON_OBJS) $(KERN_USER_H) $(EXTRA_DEPS)
-	$(QUIET_CC)$(CC) -Wall $(CFLAGS) $(LDFLAGS) -o $@ $(COMMON_OBJS) $(LIB_OBJS) \
+	$(QUIET_CC)$(CC) -Wall $(CFLAGS) $(LDFLAGS) -o ../bin/$@ $(COMMON_OBJS) $(LIB_OBJS) \
 	 $< $(LDLIBS)
 
 $(XDP_OBJ): %.o: %.c  Makefile $(COMMON_MK) $(KERN_USER_H) $(EXTRA_DEPS) $(OBJECT_LIBBPF)
@@ -123,4 +123,4 @@ $(XDP_OBJ): %.o: %.c  Makefile $(COMMON_MK) $(KERN_USER_H) $(EXTRA_DEPS) $(OBJEC
 	    -Wno-compare-distinct-pointer-types \
 	    -Werror \
 	    -O2 -emit-llvm -c -g -o ${@:.o=.ll} $<
-	$(QUIET_LLC)$(LLC) -march=bpf -filetype=obj -o $@ ${@:.o=.ll}
+	$(QUIET_LLC)$(LLC) -march=bpf -filetype=obj -o ../bin/$@ ${@:.o=.ll}

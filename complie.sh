@@ -21,3 +21,19 @@ make -C ./ebpf_for_client -j
 
 rm -rf ./ebpf_for_service/.output
 rm -rf ./ebpf_for_client/.output
+
+./configure
+
+if [ $? -eq 0 ]; then
+    make
+else
+    echo "Error: configure failed."
+    exit 1
+fi
+
+if [ $? -eq 0 ]; then
+    make -C ./xdp -j
+else
+    echo "Error: configure failed."
+    exit 1
+fi
