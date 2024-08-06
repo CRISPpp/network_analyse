@@ -3,7 +3,7 @@
 ## ebpf config for ubuntu
 
 ```
-sudo apt install clang llvm libelf1 libelf-dev zlib1g-dev bpfcc-tools linux-headers-$(uname -r) g++-multilib libpcap-dev build-essential libc6-dev-i386 linux-tools-$(uname -r) linux-tools-common linux-tools-generic tcpdump
+sudo apt install clang llvm libelf1 libelf-dev zlib1g-dev bpfcc-tools linux-headers-$(uname -r) g++-multilib libpcap-dev build-essential libc6-dev-i386 linux-tools-$(uname -r) linux-tools-common linux-tools-generic tcpdump m4
 ```
 if you cant not get vmlinux.h, you can generate it with command below
 ```
