@@ -2,8 +2,10 @@
 #include <string.h>
 #include <iostream>
 #include <signal.h>
+#include <arpa/inet.h>
 
 #include "../utils.cpp"
+#include "../xdp/xdp_packet.h"
 
 char tcp_state_str[12][30];
 char tcp_state[32];
@@ -45,11 +47,48 @@ int test_cstr_eq() {
     return strcmp(t, "12345");
 }
 
+void test_hash() {
+    struct packet_info p = {
+        .src_ip = 0xC0A80001, // 192.168.0.1
+        .dst_ip = 0xC0A80002, // 192.168.0.2
+        .src_port = 12345,
+        .dst_port = 80,
+        .timestamp = 1625254368000000
+    };
+    printf("%u\n", hash_packet_info(&p));
+
+    struct packet_info pp = {
+        .src_ip = 0xC0A80011, // 192.168.0.1
+        .dst_ip = 0xC0A80012, // 192.168.0.2
+        .src_port = 12352,
+        .dst_port = 2231,
+        .timestamp = 16252512312300000
+    };
+    printf("%u\n", hash_packet_info(&pp));
+    struct packet_info ppp = {
+        .src_ip = 0xC0A80001, // 192.168.0.1
+        .dst_ip = 0xC0A80002, // 192.168.0.2
+        .src_port = 12345,
+        .dst_port = 80,
+        .timestamp = 1625254368000000
+    };
+    printf("%u\n", hash_packet_info(&ppp));
+}
+
+void print_ip(__u32 ip) {
+    char ip_str[INET_ADDRSTRLEN];
+
+    // Convert the __u32 IP address to a string in x.x.x.x format
+    if (inet_ntop(AF_INET, &ip, ip_str, sizeof(ip_str)) != NULL) {
+        printf("IP Address: %s\n", ip_str);
+    } else {
+        perror("inet_ntop");
+    }
+}
+
 int main() {
     if (signal(SIGINT, sig_int) == SIG_ERR) {
         fprintf(stderr, "can't set signal handler: %s\n", "error");
     }
-    while (exiting == 0) {
-        ;
-    }
+    print_ip(2130706433);
 }
