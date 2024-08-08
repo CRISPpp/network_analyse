@@ -29,13 +29,20 @@ bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
 ./bin/tcp_analyse -p $(PID from test client demo)
 ```
 
-## load xdp part
+## load xdp part by ip
 ```
 ip link set dev lo xdpgeneric obj ../bin/xdp_xxx.o sec xdp
 ```
-## remove xdp part
+## remove xdp part by ip
 ```
 ip link set dev lo xdpgeneric off
+```
+
+## load xdp by bin
+```
+cd bin
+./xxx
+it will auto unload xdp prog auto ctrl-c
 ```
 
 ## show debug log
