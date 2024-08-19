@@ -89,10 +89,17 @@ static void stats_print(struct packet_info *p)
 {
 	char src[INET6_ADDRSTRLEN];
     char dst[INET6_ADDRSTRLEN];
-	printf("Packet Data - src_ip: %s,  src_port: %u, dst_ip: %s,  dst_port: %u, timestamp(us): %llu\n",
-                inet_ntop(AF_INET, &(p->src_ip), src, INET_ADDRSTRLEN), p->src_port,
+	if ((strcmp(inet_ntop(AF_INET, &(p->src_ip), src, INET_ADDRSTRLEN), "127.0.0.1")) == 0) {
+		if ((strcmp(inet_ntop(AF_INET, &(p->src_ip), src, INET_ADDRSTRLEN), "127.0.0.1")) == 0) {
+			if (p->src_port == 9999 || p -> dst_port == 9999) {
+				printf("Packet Data - src_ip: %s,  src_port: %u, dst_ip: %s,  dst_port: %u, timestamp(us): %llu\n",
+    			inet_ntop(AF_INET, &(p->src_ip), src, INET_ADDRSTRLEN), p->src_port,
 				inet_ntop(AF_INET, &(p->dst_ip), dst, INET_ADDRSTRLEN), p->dst_port,
 				p->timestamp);
+			}
+		}
+	}
+
 }
 
 

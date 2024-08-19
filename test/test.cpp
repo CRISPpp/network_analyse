@@ -3,6 +3,7 @@
 #include <iostream>
 #include <signal.h>
 #include <arpa/inet.h>
+#include <stdlib.h>
 
 #include "../utils.cpp"
 #include "../xdp/xdp_packet.h"
@@ -86,9 +87,88 @@ void print_ip(__u32 ip) {
     }
 }
 
+void test_env() {
+    // 默认值
+    char *pin_basedir = strdup("/sys/fs/bpf");
+    if (pin_basedir == NULL) {
+        fprintf(stderr, "Failed to allocate memory for pin_basedir\n");
+        return;
+    }
+
+    // 从环境变量读取新值
+    const char *env_value = getenv("BPF_PIN_BASEDIR");
+    if (env_value != NULL) {
+        char *temp = (char*)realloc(pin_basedir, strlen(env_value) + 1);
+        if (temp == NULL) {
+            fprintf(stderr, "Failed to allocate memory for new pin_basedir\n");
+            free(pin_basedir);  // 释放原来的内存
+            return;
+        }
+        pin_basedir = temp;
+        strcpy(pin_basedir, env_value);
+    }
+
+    printf("Current pin_basedir: %s\n", pin_basedir);
+
+    // 释放内存
+    free(pin_basedir);
+}
+
+#define CONFIG_FILE "config.txt"
+#define FIELD "key"
+
+char *read_field_value(const char *filename, const char *field) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        perror("fopen");
+        return NULL;
+    }
+
+    char line[256];
+    static char value[256] = {0};
+
+    while (fgets(line, sizeof(line), file)) {
+        if (strncmp(line, field, strlen(field)) == 0 && line[strlen(field)] == '=') {
+            char *newline = strchr(line, '\n');
+            if (newline) {
+                *newline = '\0';
+            }
+            strcpy(value, line + strlen(field) + 1);
+            fclose(file);
+            return value;
+        }
+    }
+
+    fclose(file);
+    return NULL;
+}
+
+void monitor_config(const char *filename, const char *field, int interval) {
+    char *prev_value = NULL;
+    while (1) {
+        char *current_value = read_field_value(filename, field);
+        if (current_value && (!prev_value || strcmp(prev_value, current_value) != 0)) {
+            if (prev_value) {
+                printf("Field '%s' changed from '%s' to '%s'\n", field, prev_value, current_value);
+            } else {
+                printf("Field '%s' initialized with value '%s'\n", field, current_value);
+            }
+            if (current_value) {
+                free(prev_value);
+                prev_value = strdup(current_value);
+            }
+        }
+        sleep(interval);
+    }
+}
+
+void test_readConfig() {
+    monitor_config(CONFIG_FILE, FIELD, 5);
+}
+
 int main() {
     if (signal(SIGINT, sig_int) == SIG_ERR) {
         fprintf(stderr, "can't set signal handler: %s\n", "error");
     }
-    print_ip(2130706433);
+    test_readConfig();
 }
