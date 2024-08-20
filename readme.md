@@ -1,5 +1,6 @@
 # a project to analyse network latency developed CRISPpp
 # Result example with service run in one machine with 3000bit size packet
+![network](./img/network.png)
 ## xdp
 ```
 Packet Data - src_ip: 127.0.0.1,  src_port: 53710, dst_ip: 127.0.0.1,  dst_port: 9999, timestamp(us): 673422472
