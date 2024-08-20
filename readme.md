@@ -19,27 +19,11 @@ PID    COMM         IP SADDR            DADDR            DPORT TIMESTAMP(us) FUN
 37759  client       4  0.0.0.0          0.0.0.0          0     673422526 tcp_rcv_state_process TCP_LISTEN transfer into new state 0
 37759  client       4  127.0.0.1        127.0.0.1        9999  673422597 tcp_rcv_state_process TCP_SYN_SENT transfer into new state 207
 37759  client       4  127.0.0.1        127.0.0.1        53710 673422668 tcp_rcv_state_process TCP_SYN_RECV transfer into new state 0
-30177  server       4  127.0.0.1        127.0.0.1        9999  673423605 tcp_rcv_state_process TCP_FIN_WAIT1 transfer into new state 0
-30177  server       4  127.0.0.1        127.0.0.1        53710 673423682 tcp_rcv_state_process TCP_LAST_ACK transfer into new state 0
 ```
 ## ebpf for service
 ```
 PID    COMM         IP SADDR            DADDR            DPORT TIMESTAMP(us) FUNC TCP_STATE TCP_DESCRIPTION
 30177  server       4  127.0.0.1        127.0.0.1        53710 673423330 tcp_recvmsg TCP_ESTABLISHED server receive message
-37759  client       6  (null)           (null)           0     673422502 tcp_v4_rcv UNKNOWN_STATE server receive SYN packet
-37759  client       4  0.0.0.0          0.0.0.0          0     673422516 tcp_v4_do_rcv TCP_LISTEN rcv ack
-37759  client       4  0.0.0.0          0.0.0.0          0     673422522 tcp_rcv_state_process TCP_LISTEN server state change
-37759  client       6  (null)           (null)           0     673422579 tcp_v4_rcv UNKNOWN_STATE server receive  packet
-37759  client       4  127.0.0.1        127.0.0.1        9999  673422591 tcp_v4_do_rcv TCP_SYN_SENT rcv ack
-37759  client       4  127.0.0.1        127.0.0.1        9999  673422594 tcp_rcv_state_process TCP_SYN_SENT server state change
-37759  client       6  (null)           (null)           0     673422639 tcp_v4_rcv UNKNOWN_STATE server receive  packet
-37759  client       4  127.0.0.1        127.0.0.1        53710 673422663 tcp_rcv_state_process TCP_SYN_RECV server state change
-37759  client       6  (null)           (null)           0     673423283 tcp_v4_rcv UNKNOWN_STATE server receive  packet
-37759  client       4  127.0.0.1        127.0.0.1        53710 673423289 tcp_v4_do_rcv TCP_ESTABLISHED rcv ack
-37759  client       6  (null)           (null)           0     673423308 tcp_v4_rcv UNKNOWN_STATE server receive  packet
-37759  client       4  127.0.0.1        127.0.0.1        9999  673423317 tcp_v4_do_rcv TCP_ESTABLISHED rcv ack
-37759  client       6  (null)           (null)           0     673423411 tcp_v4_rcv UNKNOWN_STATE server receive  packet
-37759  client       4  127.0.0.1        127.0.0.1        53710 673423419 tcp_v4_do_rcv TCP_ESTABLISHED rcv ack
 30177  server       4  127.0.0.1        127.0.0.1        53710 673423526 tcp_recvmsg TCP_CLOSE_WAIT server receive message
 30177  server       6  (null)           (null)           0     673423586 tcp_v4_rcv UNKNOWN_STATE server receive  packet
 30177  server       4  127.0.0.1        127.0.0.1        9999  673423597 tcp_v4_do_rcv TCP_FIN_WAIT1 rcv ack
