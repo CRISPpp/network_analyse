@@ -79,9 +79,11 @@ void* worker_thread(void* arg) {
                         if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SO_TIMESTAMP)
                         {
                             tv = (struct timeval *)CMSG_DATA(cmsg);
-                            std::cout << "Packet received at: " << tv->tv_sec << "." << (float)tv->tv_usec / 1000000 << " seconds" << std::endl;
                             struct timeval cur_time = get_current_timeval();
                             std::cout << "Network stack processing time: " << cur_time.tv_sec - tv->tv_sec << "." << (float)(cur_time.tv_usec - tv->tv_usec) / 1000000 << " seconds" << std::endl;
+
+                            long long cur_epoch_time = get_sys_start_timestamp_us();
+                            cout << "cur epoch_time: " << cur_epoch_time << endl;
                         }
                     }
                     // 读取数据并打印

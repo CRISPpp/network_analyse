@@ -35,11 +35,17 @@ timeval get_current_timeval() {
 }
 
 unsigned long long get_sys_start_timestamp_us() {
-    // 获取系统启动到当前时间的纳秒数
     auto uptime = std::chrono::steady_clock::now().time_since_epoch();
     auto uptime_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(uptime).count();
 
     return uptime_ns / 1000ull;
+}
+
+unsigned long long tranfer_unix_time2epoch_time(timeval unix_time) {
+    timeval cur_unix = get_current_timeval();
+    long long cur_epoch = get_sys_start_timestamp_us();
+    long long tmp = (cur_unix.tv_sec * 1000000 + cur_unix.tv_usec) - cur_epoch;
+    return (unix_time.tv_sec * 1000000 + unix_time.tv_usec) + tmp;
 }
 
 // 生成一个3000字节的随机字符串

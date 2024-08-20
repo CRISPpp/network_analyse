@@ -70,6 +70,8 @@ int main()
         {
             error("ERROR writing to socket");
         }
+        long long cur_epoch_time = get_sys_start_timestamp_us();
+        cout << "cur epoch_time: " << cur_epoch_time << endl;
         // // 接收数据
         // struct msghdr msg;
         // struct iovec iov;

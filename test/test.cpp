@@ -170,5 +170,7 @@ int main() {
     if (signal(SIGINT, sig_int) == SIG_ERR) {
         fprintf(stderr, "can't set signal handler: %s\n", "error");
     }
-    test_readConfig();
+    while(true) {
+        test_get_sys_start_timestamp_us();
+    }
 }
